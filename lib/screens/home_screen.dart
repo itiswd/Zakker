@@ -698,7 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'النسخة 2.0 - محسّنة بباكج Quran',
+                  'النسخة 1.0 - محسّنة بباكج Quran',
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 SizedBox(height: 16),
