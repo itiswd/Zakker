@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zakker/services/search_delegate.dart';
 
 import '../providers/surah_provider.dart';
 import '../theme/app_theme.dart';
@@ -88,6 +89,13 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.search_rounded),
+          tooltip: 'بحث',
+          onPressed: () {
+            showSearch(context: context, delegate: QuranSearchDelegate(ref));
+          },
+        ),
         IconButton(
           icon: const Icon(Icons.refresh_rounded),
           tooltip: 'تحديث',
