@@ -179,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return CustomScrollView(
       slivers: [
         // قسم الإحصائيات
-        if (!_isSearchActive) const SliverToBoxAdapter(child: StatsHeader()),
+        const SliverToBoxAdapter(child: StatsHeader()),
 
         // خانة البحث
         SliverToBoxAdapter(
@@ -190,13 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
 
         // أزرار الفلاتر
-        if (_isSearchActive)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: _buildFilterChips(),
-            ),
-          ),
+        SliverToBoxAdapter(child: _buildFilterChips()),
 
         // عداد النتائج
         if (_searchQuery.isNotEmpty || _currentFilter != SurahFilter.all)
@@ -391,6 +385,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
+          SizedBox(width: 16),
           _buildFilterChip(SurahFilter.all, 'الكل', Icons.list_rounded),
           _buildFilterChip(
             SurahFilter.completed,
@@ -407,8 +402,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             'متبقية',
             Icons.radio_button_unchecked_rounded,
           ),
-          _buildFilterChip(SurahFilter.meccan, 'مكية', Icons.location_on),
-          _buildFilterChip(SurahFilter.medinan, 'مدنية', Icons.location_city),
+          SizedBox(width: 8),
         ],
       ),
     );
@@ -437,6 +431,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _currentFilter = filter;
           });
         },
+        checkmarkColor: AppTheme.cardColor,
         selectedColor: AppTheme.primaryColor,
         backgroundColor: AppTheme.primaryColor.withAlpha(26),
         labelStyle: TextStyle(
