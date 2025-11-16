@@ -32,11 +32,14 @@ class QuranHifdhApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'متابعة حفظ القرآن الكريم',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: const HomeScreen(),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: MaterialApp(
+        title: 'متابعة حفظ القرآن الكريم',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: const HomeScreen(),
+      ),
     );
   }
 }

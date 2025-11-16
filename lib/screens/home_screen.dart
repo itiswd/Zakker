@@ -1,18 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:zakker/services/search_delegate.dart';
 
+import '../models/surah.dart';
 import '../providers/surah_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/stats_header.dart';
 import '../widgets/surah_card.dart';
 
-class HomeScreen extends ConsumerWidget {
+enum SurahFilter { all, completed, inProgress, notStarted, meccan, medinan }
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  SurahFilter _currentFilter = SurahFilter.all;
+  bool _isSearchActive = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final surahsAsync = ref.watch(surahListProvider);
 
     return Directionality(
@@ -85,17 +103,10 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(width: 12),
           const Text('متابعة الحفظ'),
-          Spacer(),
+          const Spacer(),
         ],
       ),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.search_rounded),
-          tooltip: 'بحث',
-          onPressed: () {
-            showSearch(context: context, delegate: QuranSearchDelegate(ref));
-          },
-        ),
         IconButton(
           icon: const Icon(Icons.refresh_rounded),
           tooltip: 'تحديث',
@@ -120,7 +131,11 @@ class HomeScreen extends ConsumerWidget {
               value: 'reset',
               child: Row(
                 children: [
-                  Icon(Icons.restart_alt, size: 20),
+                  Icon(
+                    Icons.restart_alt,
+                    size: 20,
+                    color: AppTheme.textPrimary,
+                  ),
                   SizedBox(width: 12),
                   Text('إعادة تعيين الكل'),
                 ],
@@ -130,7 +145,11 @@ class HomeScreen extends ConsumerWidget {
               value: 'about',
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 20),
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: AppTheme.textPrimary,
+                  ),
                   SizedBox(width: 12),
                   Text('عن التطبيق'),
                 ],
@@ -142,9 +161,19 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, WidgetRef ref, List surahs) {
+  Widget _buildContent(
+    BuildContext context,
+    WidgetRef ref,
+    List<Surah> surahs,
+  ) {
     if (surahs.isEmpty) {
       return const EmptyState();
+    }
+
+    // تطبيق الفلاتر والبحث
+    var filteredSurahs = _applyFilter(surahs);
+    if (_searchQuery.isNotEmpty) {
+      filteredSurahs = _searchSurahs(filteredSurahs, _searchQuery);
     }
 
     return CustomScrollView(
@@ -152,17 +181,422 @@ class HomeScreen extends ConsumerWidget {
         // قسم الإحصائيات
         const SliverToBoxAdapter(child: StatsHeader()),
 
-        // قائمة السور
-        SliverPadding(
-          padding: const EdgeInsets.all(16),
-          sliver: SliverList(
-            delegate: SliverChildBuilderDelegate((context, index) {
-              return SurahCard(surah: surahs[index]);
-            }, childCount: surahs.length),
+        // خانة البحث
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, _isSearchActive ? 16 : 16, 16, 8),
+            child: _buildSearchBar(context, ref),
           ),
         ),
+
+        // أزرار الفلاتر
+        if (_isSearchActive) SliverToBoxAdapter(child: _buildFilterChips()),
+
+        // عداد النتائج
+        if (_searchQuery.isNotEmpty || _currentFilter != SurahFilter.all)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: _buildResultsHeader(filteredSurahs.length),
+            ),
+          ),
+
+        // قائمة السور
+        if (filteredSurahs.isEmpty)
+          SliverFillRemaining(child: _buildEmptyResults())
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return SurahCard(surah: filteredSurahs[index]);
+              }, childCount: filteredSurahs.length),
+            ),
+          ),
       ],
     );
+  }
+
+  Widget _buildSearchBar(BuildContext context, WidgetRef ref) {
+    return Material(
+      elevation: _isSearchActive ? 4 : 2,
+      borderRadius: BorderRadius.circular(16),
+      shadowColor: Colors.black.withAlpha(13),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isSearchActive
+                ? AppTheme.primaryColor
+                : AppTheme.dividerColor,
+            width: _isSearchActive ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withAlpha(26),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.search_rounded,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: 'ابحث عن سورة بالاسم أو الرقم...',
+                  hintStyle: TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textSecondary,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                style: const TextStyle(fontSize: 15),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                    _isSearchActive = value.isNotEmpty;
+                  });
+                },
+                onTap: () {
+                  setState(() {});
+                },
+              ),
+            ),
+            if (_searchQuery.isNotEmpty)
+              IconButton(
+                icon: const Icon(
+                  Icons.clear_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 20,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                    _isSearchActive = false;
+                    _currentFilter = SurahFilter.all;
+                  });
+                },
+              )
+            else
+              PopupMenuButton<SurahFilter>(
+                icon: const Icon(
+                  Icons.tune_rounded,
+                  color: AppTheme.textSecondary,
+                  size: 20,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onSelected: (filter) {
+                  setState(() {
+                    _currentFilter = filter;
+                    _isSearchActive = true;
+                  });
+                },
+                itemBuilder: (context) => [
+                  _buildFilterMenuItem(
+                    SurahFilter.all,
+                    'جميع السور',
+                    Icons.list_rounded,
+                  ),
+                  const PopupMenuDivider(),
+                  _buildFilterMenuItem(
+                    SurahFilter.completed,
+                    'السور المكتملة',
+                    Icons.check_circle_rounded,
+                  ),
+                  _buildFilterMenuItem(
+                    SurahFilter.inProgress,
+                    'السور الجارية',
+                    Icons.pending_rounded,
+                  ),
+                  _buildFilterMenuItem(
+                    SurahFilter.notStarted,
+                    'السور التي لم تبدأ',
+                    Icons.radio_button_unchecked_rounded,
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  PopupMenuItem<SurahFilter> _buildFilterMenuItem(
+    SurahFilter filter,
+    String label,
+    IconData icon,
+  ) {
+    final isSelected = _currentFilter == filter;
+    return PopupMenuItem(
+      value: filter,
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppTheme.primaryColor : AppTheme.textPrimary,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          if (isSelected) ...[
+            const Spacer(),
+            const Icon(Icons.check, size: 20, color: AppTheme.primaryColor),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          SizedBox(width: 16),
+          _buildFilterChip(SurahFilter.all, 'الكل', Icons.list_rounded),
+          _buildFilterChip(
+            SurahFilter.completed,
+            'مكتملة',
+            Icons.check_circle_rounded,
+          ),
+          _buildFilterChip(
+            SurahFilter.inProgress,
+            'جارية',
+            Icons.pending_rounded,
+          ),
+          _buildFilterChip(
+            SurahFilter.notStarted,
+            'متبقية',
+            Icons.radio_button_unchecked_rounded,
+          ),
+          SizedBox(width: 8),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(SurahFilter filter, String label, IconData icon) {
+    final isSelected = _currentFilter == filter;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: FilterChip(
+        selected: isSelected,
+
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : AppTheme.primaryColor,
+            ),
+            const SizedBox(width: 6),
+            Text(label),
+          ],
+        ),
+        onSelected: (selected) {
+          setState(() {
+            _currentFilter = filter;
+          });
+        },
+        checkmarkColor: AppTheme.cardColor,
+        selectedColor: AppTheme.primaryColor,
+        backgroundColor: AppTheme.primaryColor.withAlpha(26),
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.white : AppTheme.primaryColor,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      ),
+    );
+  }
+
+  Widget _buildResultsHeader(int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.dividerColor),
+      ),
+      child: Row(
+        children: [
+          Icon(_getFilterIcon(), size: 18, color: AppTheme.primaryColor),
+          const SizedBox(width: 8),
+          Text(
+            _getFilterLabel(),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withAlpha(26),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '$count سورة',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyResults() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withAlpha(26),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 64,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'لا توجد نتائج',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _searchQuery.isEmpty
+                  ? 'لم يتم العثور على سور بهذا الفلتر'
+                  : 'لم يتم العثور على نتائج لـ "$_searchQuery"',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _searchController.clear();
+                  _searchQuery = '';
+                  _currentFilter = SurahFilter.all;
+                  _isSearchActive = false;
+                });
+              },
+              icon: const Icon(Icons.clear_all_rounded),
+              label: const Text('إعادة تعيين البحث'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Surah> _applyFilter(List<Surah> surahs) {
+    switch (_currentFilter) {
+      case SurahFilter.completed:
+        return surahs.where((s) => s.isCompleted).toList();
+      case SurahFilter.inProgress:
+        return surahs.where((s) => s.hasStarted && !s.isCompleted).toList();
+      case SurahFilter.notStarted:
+        return surahs.where((s) => !s.hasStarted).toList();
+      case SurahFilter.meccan:
+        return surahs.where((s) => s.revelationType == 'Meccan').toList();
+      case SurahFilter.medinan:
+        return surahs.where((s) => s.revelationType == 'Medinan').toList();
+      case SurahFilter.all:
+        return surahs;
+    }
+  }
+
+  List<Surah> _searchSurahs(List<Surah> surahs, String query) {
+    final lowerQuery = query.toLowerCase();
+
+    return surahs.where((surah) {
+      // البحث في الاسم العربي
+      if (surah.nameArabic.contains(query)) return true;
+
+      // البحث في الاسم الإنجليزي
+      if (surah.nameEnglish.toLowerCase().contains(lowerQuery)) return true;
+
+      // البحث برقم السورة
+      if (surah.number.toString() == query) return true;
+
+      // البحث المتقدم
+      if (query == 'مكية' && surah.revelationType == 'Meccan') return true;
+      if (query == 'مدنية' && surah.revelationType == 'Medinan') return true;
+
+      return false;
+    }).toList();
+  }
+
+  IconData _getFilterIcon() {
+    switch (_currentFilter) {
+      case SurahFilter.completed:
+        return Icons.check_circle_rounded;
+      case SurahFilter.inProgress:
+        return Icons.pending_rounded;
+      case SurahFilter.notStarted:
+        return Icons.radio_button_unchecked_rounded;
+      case SurahFilter.meccan:
+        return Icons.location_on;
+      case SurahFilter.medinan:
+        return Icons.location_city;
+      case SurahFilter.all:
+        return Icons.list_rounded;
+    }
+  }
+
+  String _getFilterLabel() {
+    switch (_currentFilter) {
+      case SurahFilter.completed:
+        return 'السور المكتملة';
+      case SurahFilter.inProgress:
+        return 'السور الجارية';
+      case SurahFilter.notStarted:
+        return 'السور التي لم تبدأ';
+      case SurahFilter.meccan:
+        return 'السور المكية';
+      case SurahFilter.medinan:
+        return 'السور المدنية';
+      case SurahFilter.all:
+        return _searchQuery.isEmpty ? 'جميع السور' : 'نتائج البحث';
+    }
   }
 
   void _showResetDialog(BuildContext context, WidgetRef ref) {
@@ -247,7 +681,7 @@ class HomeScreen extends ConsumerWidget {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'النسخة 2.0 - محسّنة بباكج Quran',
+                  'النسخة 1.0 - محسّنة بباكج Quran',
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 SizedBox(height: 16),
