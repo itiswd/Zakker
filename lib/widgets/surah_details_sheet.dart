@@ -87,67 +87,69 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: Container(
-          decoration: const BoxDecoration(
-            color: AppTheme.cardColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Directionality(
-            textDirection: TextDirection.rtl,
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                top: 8,
-                left: 20,
-                right: 20,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // مؤشر السحب
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppTheme.dividerColor,
-                      borderRadius: BorderRadius.circular(2),
+    return SingleChildScrollView(
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: SlideTransition(
+          position: _slideAnimation,
+          child: Container(
+            decoration: const BoxDecoration(
+              color: AppTheme.cardColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.rtl,
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  top: 8,
+                  left: 20,
+                  right: 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // مؤشر السحب
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppTheme.dividerColor,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                  // عنوان السورة
-                  _buildHeader(),
-                  const SizedBox(height: 32),
+                    // عنوان السورة
+                    _buildHeader(),
+                    const SizedBox(height: 32),
 
-                  // عداد الصفحات
-                  _buildCounter(
-                    icon: Icons.auto_stories_rounded,
-                    label: 'عدد الصفحات المحفوظة',
-                    value: memorizedPages,
-                    max: widget.surah.totalPages,
-                    onChanged: (value) =>
-                        setState(() => memorizedPages = value),
-                  ),
-                  const SizedBox(height: 20),
+                    // عداد الصفحات
+                    _buildCounter(
+                      icon: Icons.auto_stories_rounded,
+                      label: 'عدد الصفحات المحفوظة',
+                      value: memorizedPages,
+                      max: widget.surah.totalPages,
+                      onChanged: (value) =>
+                          setState(() => memorizedPages = value),
+                    ),
+                    const SizedBox(height: 20),
 
-                  // عداد الآيات
-                  _buildCounter(
-                    icon: Icons.article_rounded,
-                    label: 'عدد الآيات المحفوظة',
-                    value: memorizedAyahs,
-                    max: widget.surah.totalVerses,
-                    onChanged: (value) =>
-                        setState(() => memorizedAyahs = value),
-                  ),
-                  const SizedBox(height: 32),
+                    // عداد الآيات
+                    _buildCounter(
+                      icon: Icons.article_rounded,
+                      label: 'عدد الآيات المحفوظة',
+                      value: memorizedAyahs,
+                      max: widget.surah.totalVerses,
+                      onChanged: (value) =>
+                          setState(() => memorizedAyahs = value),
+                    ),
+                    const SizedBox(height: 32),
 
-                  // الأزرار
-                  _buildButtons(),
-                ],
+                    // الأزرار
+                    _buildButtons(),
+                  ],
+                ),
               ),
             ),
           ),

@@ -102,7 +102,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: const Icon(Icons.menu_book_rounded, size: 24),
           ),
           const SizedBox(width: 12),
-          const Text('متابعة الحفظ'),
+          const Text(
+            'حَفَظَة',
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+          ),
           const Spacer(),
         ],
       ),
@@ -218,131 +221,133 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildSearchBar(BuildContext context, WidgetRef ref) {
-    return Material(
-      elevation: _isSearchActive ? 4 : 2,
-      borderRadius: BorderRadius.circular(16),
-      shadowColor: Colors.black.withAlpha(13),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isSearchActive
-                ? AppTheme.primaryColor
-                : AppTheme.dividerColor,
-            width: _isSearchActive ? 2 : 1,
+    return SingleChildScrollView(
+      child: Material(
+        elevation: _isSearchActive ? 4 : 2,
+        borderRadius: BorderRadius.circular(16),
+        shadowColor: Colors.black.withAlpha(120),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _isSearchActive
+                  ? AppTheme.primaryColor
+                  : AppTheme.dividerColor,
+              width: _isSearchActive ? 2 : 1,
+            ),
           ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withAlpha(26),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
               ),
-              child: const Icon(
-                Icons.search_rounded,
-                color: AppTheme.primaryColor,
-                size: 20,
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: const InputDecoration(
+                    hintText: 'ابحث عن سورة بالاسم أو الرقم...',
+                    hintStyle: TextStyle(
+                      fontSize: 15,
+                      color: AppTheme.textSecondary,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  style: const TextStyle(fontSize: 15),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                      _isSearchActive = value.isNotEmpty;
+                    });
+                  },
+                  onTap: () {
+                    setState(() {
+                      _isSearchActive = true;
+                    });
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: 'ابحث عن سورة بالاسم أو الرقم...',
-                  hintStyle: TextStyle(
-                    fontSize: 15,
+              if (_searchQuery.isNotEmpty)
+                IconButton(
+                  icon: const Icon(
+                    Icons.clear_rounded,
                     color: AppTheme.textSecondary,
+                    size: 20,
                   ),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                      _isSearchActive = false;
+                      _currentFilter = SurahFilter.all;
+                    });
+                  },
+                )
+              else
+                PopupMenuButton<SurahFilter>(
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    color: AppTheme.textSecondary,
+                    size: 20,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  onSelected: (filter) {
+                    setState(() {
+                      _currentFilter = filter;
+                      _isSearchActive = true;
+                    });
+                  },
+                  itemBuilder: (context) => [
+                    _buildFilterMenuItem(
+                      SurahFilter.all,
+                      'جميع السور',
+                      Icons.list_rounded,
+                    ),
+                    const PopupMenuDivider(),
+                    _buildFilterMenuItem(
+                      SurahFilter.completed,
+                      'السور المكتملة',
+                      Icons.check_circle_rounded,
+                    ),
+                    _buildFilterMenuItem(
+                      SurahFilter.inProgress,
+                      'السور الجارية',
+                      Icons.pending_rounded,
+                    ),
+                    _buildFilterMenuItem(
+                      SurahFilter.notStarted,
+                      'السور التي لم تبدأ',
+                      Icons.radio_button_unchecked_rounded,
+                    ),
+                    const PopupMenuDivider(),
+                    _buildFilterMenuItem(
+                      SurahFilter.meccan,
+                      'السور المكية',
+                      Icons.location_on,
+                    ),
+                    _buildFilterMenuItem(
+                      SurahFilter.medinan,
+                      'السور المدنية',
+                      Icons.location_city,
+                    ),
+                  ],
                 ),
-                style: const TextStyle(fontSize: 15),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                    _isSearchActive = value.isNotEmpty;
-                  });
-                },
-                onTap: () {
-                  setState(() {
-                    _isSearchActive = true;
-                  });
-                },
-              ),
-            ),
-            if (_searchQuery.isNotEmpty)
-              IconButton(
-                icon: const Icon(
-                  Icons.clear_rounded,
-                  color: AppTheme.textSecondary,
-                  size: 20,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _searchController.clear();
-                    _searchQuery = '';
-                    _isSearchActive = false;
-                    _currentFilter = SurahFilter.all;
-                  });
-                },
-              )
-            else
-              PopupMenuButton<SurahFilter>(
-                icon: const Icon(
-                  Icons.tune_rounded,
-                  color: AppTheme.textSecondary,
-                  size: 20,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                onSelected: (filter) {
-                  setState(() {
-                    _currentFilter = filter;
-                    _isSearchActive = true;
-                  });
-                },
-                itemBuilder: (context) => [
-                  _buildFilterMenuItem(
-                    SurahFilter.all,
-                    'جميع السور',
-                    Icons.list_rounded,
-                  ),
-                  const PopupMenuDivider(),
-                  _buildFilterMenuItem(
-                    SurahFilter.completed,
-                    'السور المكتملة',
-                    Icons.check_circle_rounded,
-                  ),
-                  _buildFilterMenuItem(
-                    SurahFilter.inProgress,
-                    'السور الجارية',
-                    Icons.pending_rounded,
-                  ),
-                  _buildFilterMenuItem(
-                    SurahFilter.notStarted,
-                    'السور التي لم تبدأ',
-                    Icons.radio_button_unchecked_rounded,
-                  ),
-                  const PopupMenuDivider(),
-                  _buildFilterMenuItem(
-                    SurahFilter.meccan,
-                    'السور المكية',
-                    Icons.location_on,
-                  ),
-                  _buildFilterMenuItem(
-                    SurahFilter.medinan,
-                    'السور المدنية',
-                    Icons.location_city,
-                  ),
-                ],
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -487,53 +492,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildEmptyResults() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withAlpha(26),
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withAlpha(26),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_off_rounded,
+                  size: 64,
+                  color: AppTheme.primaryColor,
+                ),
               ),
-              child: const Icon(
-                Icons.search_off_rounded,
-                size: 64,
-                color: AppTheme.primaryColor,
+              const SizedBox(height: 24),
+              const Text(
+                'لا توجد نتائج',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'لا توجد نتائج',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _searchQuery.isEmpty
-                  ? 'لم يتم العثور على سور بهذا الفلتر'
-                  : 'لم يتم العثور على نتائج لـ "$_searchQuery"',
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppTheme.textSecondary,
+              const SizedBox(height: 12),
+              Text(
+                _searchQuery.isEmpty
+                    ? 'لم يتم العثور على سور بهذا الفلتر'
+                    : 'لم يتم العثور على نتائج لـ "$_searchQuery"',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                  _currentFilter = SurahFilter.all;
-                  _isSearchActive = false;
-                });
-              },
-              icon: const Icon(Icons.clear_all_rounded),
-              label: const Text('إعادة تعيين البحث'),
-            ),
-          ],
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _searchController.clear();
+                    _searchQuery = '';
+                    _currentFilter = SurahFilter.all;
+                    _isSearchActive = false;
+                  });
+                },
+                icon: const Icon(Icons.clear_all_rounded),
+                label: const Text('إعادة تعيين البحث'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -682,67 +689,73 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               const Text('عن التطبيق'),
             ],
           ),
-          content: const SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'تطبيق متابعة حفظ القرآن الكريم',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'النسخة 1.0 - محسّنة بباكج Quran',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'المميزات:',
-                  style: TextStyle(fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: 8),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'بيانات دقيقة 100% من مصدر موثوق',
-                ),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'تسجيل عدد الصفحات والآيات المحفوظة',
-                ),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'متابعة نسبة الإنجاز لكل سورة',
-                ),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'إحصائيات شاملة ومفصلة',
-                ),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'معلومات السور (مكية/مدنية)',
-                ),
-                _FeatureItem(
-                  icon: Icons.check_circle,
-                  text: 'واجهة سهلة وجميلة',
-                ),
-                SizedBox(height: 16),
-                Text(
-                  '﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
+          content: SizedBox(
+            width: double.maxFinite,
+            child: const SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'تطبيق حَفَظَة',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'وفقك الله في حفظ كتابه الكريم 🤲',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
+                  SizedBox(height: 8),
+                  Text(
+                    'النسخة 1.0 - محسّنة بباكج Quran',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'المميزات:',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 8),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'بيانات دقيقة 100% من مصدر موثوق',
+                  ),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'تسجيل عدد الصفحات والآيات المحفوظة',
+                  ),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'متابعة نسبة الإنجاز لكل سورة',
+                  ),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'إحصائيات شاملة ومفصلة',
+                  ),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'معلومات السور (مكية/مدنية)',
+                  ),
+                  _FeatureItem(
+                    icon: Icons.check_circle,
+                    text: 'واجهة سهلة وجميلة',
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    '﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'وفقك الله في حفظ كتابه الكريم 🤲',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
