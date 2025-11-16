@@ -12,11 +12,10 @@ final surahListProvider =
     );
 
 class SurahListNotifier extends Notifier<AsyncValue<List<Surah>>> {
-  late final StorageService _storageService;
+  StorageService get _storageService => ref.read(storageServiceProvider);
 
   @override
   AsyncValue<List<Surah>> build() {
-    _storageService = ref.watch(storageServiceProvider);
     _loadSurahs();
     return const AsyncValue.loading();
   }

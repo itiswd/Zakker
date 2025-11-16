@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:zakker/services/quran_data_service.dart';
 
 import '../models/surah.dart';
 import '../providers/surah_provider.dart';
@@ -381,9 +382,37 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
   }
 
   void _saveProgress() {
+    // حساب أرقام الصفحات الفعلية للسورة
+    final startPage = QuranDataService.getPageNumber(widget.surah.number, 1);
+    final endPage = QuranDataService.getPageNumber(
+      widget.surah.number,
+      widget.surah.totalVerses,
+    );
+
+    // إنشاء قائمة بأرقام الصفحات المحفوظة
+    List<int> memorizedPageNumbers = [];
+    if (memorizedPages > 0) {
+      final pagesPercentage = memorizedPages / widget.surah.totalPages;
+      final actualMemorizedPages = (pagesPercentage * (endPage - startPage + 1))
+          .round();
+
+      for (
+        int i = 0;
+        i < actualMemorizedPages && (startPage + i) <= endPage;
+        i++
+      ) {
+        memorizedPageNumbers.add(startPage + i);
+      }
+    }
+
     ref
         .read(surahListProvider.notifier)
-        .updateSurah(widget.surah.number, memorizedPages, memorizedAyahs);
+        .updateSurah(
+          widget.surah.number,
+          memorizedPages,
+          memorizedAyahs,
+          memorizedPageNumbers: memorizedPageNumbers,
+        );
 
     Navigator.pop(context);
 
@@ -403,6 +432,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
                   widget.surah.number,
                   widget.surah.memorizedPages,
                   widget.surah.memorizedVerses,
+                  memorizedPageNumbers: widget.surah.memorizedPageNumbers,
                 );
           },
         ),

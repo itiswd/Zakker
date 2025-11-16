@@ -133,8 +133,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Icon(
                     Icons.restart_alt,
-                    size: 20,
                     color: AppTheme.textPrimary,
+                    size: 20,
                   ),
                   SizedBox(width: 12),
                   Text('إعادة تعيين الكل'),
@@ -147,8 +147,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   Icon(
                     Icons.info_outline,
-                    size: 20,
                     color: AppTheme.textPrimary,
+                    size: 20,
                   ),
                   SizedBox(width: 12),
                   Text('عن التطبيق'),
@@ -179,7 +179,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return CustomScrollView(
       slivers: [
         // قسم الإحصائيات
-        const SliverToBoxAdapter(child: StatsHeader()),
+        if (!_isSearchActive) const SliverToBoxAdapter(child: StatsHeader()),
 
         // خانة البحث
         SliverToBoxAdapter(
@@ -190,7 +190,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
 
         // أزرار الفلاتر
-        if (_isSearchActive) SliverToBoxAdapter(child: _buildFilterChips()),
+        if (_isSearchActive)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _buildFilterChips(),
+            ),
+          ),
 
         // عداد النتائج
         if (_searchQuery.isNotEmpty || _currentFilter != SurahFilter.all)
@@ -269,7 +275,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   });
                 },
                 onTap: () {
-                  setState(() {});
+                  setState(() {
+                    _isSearchActive = true;
+                  });
                 },
               ),
             ),
@@ -327,6 +335,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     'السور التي لم تبدأ',
                     Icons.radio_button_unchecked_rounded,
                   ),
+                  const PopupMenuDivider(),
+                  _buildFilterMenuItem(
+                    SurahFilter.meccan,
+                    'السور المكية',
+                    Icons.location_on,
+                  ),
+                  _buildFilterMenuItem(
+                    SurahFilter.medinan,
+                    'السور المدنية',
+                    Icons.location_city,
+                  ),
                 ],
               ),
           ],
@@ -372,7 +391,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          SizedBox(width: 16),
           _buildFilterChip(SurahFilter.all, 'الكل', Icons.list_rounded),
           _buildFilterChip(
             SurahFilter.completed,
@@ -389,7 +407,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             'متبقية',
             Icons.radio_button_unchecked_rounded,
           ),
-          SizedBox(width: 8),
+          _buildFilterChip(SurahFilter.meccan, 'مكية', Icons.location_on),
+          _buildFilterChip(SurahFilter.medinan, 'مدنية', Icons.location_city),
         ],
       ),
     );
@@ -401,7 +420,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       padding: const EdgeInsets.only(left: 8),
       child: FilterChip(
         selected: isSelected,
-
         label: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -419,7 +437,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             _currentFilter = filter;
           });
         },
-        checkmarkColor: AppTheme.cardColor,
         selectedColor: AppTheme.primaryColor,
         backgroundColor: AppTheme.primaryColor.withAlpha(26),
         labelStyle: TextStyle(
@@ -681,7 +698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'النسخة 1.0 - محسّنة بباكج Quran',
+                  'النسخة 2.0 - محسّنة بباكج Quran',
                   style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
                 ),
                 SizedBox(height: 16),
