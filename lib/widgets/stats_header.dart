@@ -26,40 +26,67 @@ class StatsHeader extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
           child: Column(
             children: [
-              // العنوان
-              const Text(
-                'إجمالي الحفظ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+              // العنوان مع شعار
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(51),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.auto_stories_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'إحصائيات الحفظ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 
-              // كروت الإحصائيات
+              // كروت الإحصائيات الرئيسية
               Row(
                 children: [
                   Expanded(
                     child: _StatCard(
-                      icon: Icons.auto_stories_rounded,
+                      icon: Icons.menu_book_rounded,
                       title: 'الصفحات',
                       value: '${stats['totalMemorizedPages']}',
                       total: '${stats['totalPages']}',
                       percentage: stats['pagesPercentage'] as double,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: _StatCard(
                       icon: Icons.article_rounded,
                       title: 'الآيات',
-                      value: '${stats['totalMemorizedAyahs']}',
-                      total: '${stats['totalAyahs']}',
-                      percentage: stats['ayahsPercentage'] as double,
+                      value: '${stats['totalMemorizedVerses']}',
+                      total: '${stats['totalVerses']}',
+                      percentage: stats['versesPercentage'] as double,
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+
+              // كرت السور
+              _SurahsStatsCard(
+                completedSurahs: stats['completedSurahs'] as int,
+                inProgressSurahs: stats['inProgressSurahs'] as int,
+                notStartedSurahs: stats['notStartedSurahs'] as int,
+                totalSurahs: stats['totalSurahs'] as int,
               ),
               const SizedBox(height: 24),
 
@@ -93,69 +120,65 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: AppTheme.cardShadow,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // الأيقونة
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.primaryColor.withAlpha(26),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: AppTheme.primaryColor, size: 28),
+            child: Icon(icon, color: AppTheme.primaryColor, size: 24),
           ),
-          const SizedBox(height: 4),
-
-          // العنوان
+          const SizedBox(height: 8),
           Text(
             title,
             style: const TextStyle(
               color: AppTheme.textSecondary,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
-
-          // الرقم الرئيسي
+          const SizedBox(height: 6),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 40,
+              fontSize: 32,
               fontWeight: FontWeight.bold,
               color: AppTheme.primaryColor,
+              height: 1,
             ),
-          ),
-          const SizedBox(height: 8),
-          // من إجمالي
-          Text(
-            'من $total',
-            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 4),
-
-          // النسبة المئوية
+          Text(
+            'من $total',
+            style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: _getPercentageColor(percentage).withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
+              color: _getPercentageColor(percentage).withAlpha(38),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Align(
-              alignment: AlignmentGeometry.center,
-              child: Text(
-                '${percentage.toStringAsFixed(1)}%',
-                style: TextStyle(
-                  color: _getPercentageColor(percentage),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                ),
+            child: Text(
+              '${percentage.toStringAsFixed(1)}%',
+              style: TextStyle(
+                color: _getPercentageColor(percentage),
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
           ),
@@ -172,6 +195,129 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _SurahsStatsCard extends StatelessWidget {
+  final int completedSurahs;
+  final int inProgressSurahs;
+  final int notStartedSurahs;
+  final int totalSurahs;
+
+  const _SurahsStatsCard({
+    required this.completedSurahs,
+    required this.inProgressSurahs,
+    required this.notStartedSurahs,
+    required this.totalSurahs,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.library_books_rounded,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'إحصائيات السور',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _SurahStatItem(
+                  icon: Icons.check_circle_rounded,
+                  label: 'مكتملة',
+                  value: completedSurahs,
+                  color: AppTheme.successColor,
+                ),
+              ),
+              Container(width: 1, height: 40, color: AppTheme.dividerColor),
+              Expanded(
+                child: _SurahStatItem(
+                  icon: Icons.pending_rounded,
+                  label: 'جارية',
+                  value: inProgressSurahs,
+                  color: const Color(0xFFFFB300),
+                ),
+              ),
+              Container(width: 1, height: 40, color: AppTheme.dividerColor),
+              Expanded(
+                child: _SurahStatItem(
+                  icon: Icons.radio_button_unchecked_rounded,
+                  label: 'متبقية',
+                  value: notStartedSurahs,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SurahStatItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color color;
+
+  const _SurahStatItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 6),
+        Text(
+          '$value',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
+  }
+}
+
 class _OverallProgressBar extends StatelessWidget {
   final double percentage;
 
@@ -181,26 +327,32 @@ class _OverallProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // شريط التقدم
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            height: 14,
+            height: 16,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.3),
+              color: Colors.white.withAlpha(77),
               borderRadius: BorderRadius.circular(12),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return Stack(
                   children: [
-                    Container(
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
                       width: constraints.maxWidth * (percentage / 100),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFFFFD54F), Color(0xFFFFB300)],
                         ),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB300).withAlpha(128),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -210,8 +362,6 @@ class _OverallProgressBar extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // النص
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -219,30 +369,35 @@ class _OverallProgressBar extends StatelessWidget {
               'نسبة الإنجاز الكلية',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
-              '${percentage.toStringAsFixed(1)}%',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(51),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${percentage.toStringAsFixed(1)}%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
         ),
-
-        // رسالة تحفيزية
         if (percentage > 0) ...[
           const SizedBox(height: 8),
           Text(
             _getMotivationalMessage(percentage),
-            style: TextStyle(
+            style: const TextStyle(
               color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
           ),
@@ -252,10 +407,10 @@ class _OverallProgressBar extends StatelessWidget {
   }
 
   String _getMotivationalMessage(double percentage) {
-    if (percentage >= 100) return 'ما شاء الله! أتممت حفظ القرآن الكريم🎉';
-    if (percentage >= 75) return 'ممتاز! أنت قريب من إتمام الحفظ💪';
-    if (percentage >= 50) return 'رائع! أنت في منتصف الطريق🌟';
-    if (percentage >= 25) return 'بداية موفقة! استمر في المذاكرة✨';
-    return 'انطلق في رحلة الحفظ المباركة🚀';
+    if (percentage >= 100) return 'ما شاء الله! أتممت حفظ القرآن الكريم 🎉';
+    if (percentage >= 75) return 'ممتاز! أنت قريب من إتمام الحفظ 💪';
+    if (percentage >= 50) return 'رائع! أنت في منتصف الطريق 🌟';
+    if (percentage >= 25) return 'بداية موفقة! استمر في المذاكرة ✨';
+    return 'انطلق في رحلة الحفظ المباركة 🚀';
   }
 }

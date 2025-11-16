@@ -20,7 +20,16 @@ class HomeScreen extends ConsumerWidget {
         appBar: _buildAppBar(context, ref),
         body: surahsAsync.when(
           data: (surahs) => _buildContent(context, ref, surahs),
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('جاري تحميل البيانات...'),
+              ],
+            ),
+          ),
           error: (error, stack) => Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -36,7 +45,16 @@ class HomeScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
-                TextButton.icon(
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    error.toString(),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
                   onPressed: () {
                     ref.invalidate(surahListProvider);
                   },
@@ -59,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withAlpha(51),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.menu_book_rounded, size: 24),
@@ -163,16 +181,18 @@ class HomeScreen extends ConsumerWidget {
               child: const Text('إلغاء'),
             ),
             ElevatedButton(
-              onPressed: () {
-                ref.read(surahListProvider.notifier).resetAllProgress();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('تم إعادة تعيين جميع البيانات بنجاح'),
-                    backgroundColor: AppTheme.successColor,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
+              onPressed: () async {
+                await ref.read(surahListProvider.notifier).resetAllProgress();
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('تم إعادة تعيين جميع البيانات بنجاح'),
+                      backgroundColor: AppTheme.successColor,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorColor,
@@ -196,7 +216,7 @@ class HomeScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppTheme.primaryColor.withAlpha(26),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -208,51 +228,68 @@ class HomeScreen extends ConsumerWidget {
               const Text('عن التطبيق'),
             ],
           ),
-          content: const Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'تطبيق متابعة حفظ القرآن الكريم',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              SizedBox(height: 16),
-              Text('المميزات:', style: TextStyle(fontWeight: FontWeight.w600)),
-              SizedBox(height: 8),
-              _FeatureItem(
-                icon: Icons.check_circle,
-                text: 'تسجيل عدد الصفحات والآيات المحفوظة',
-              ),
-              _FeatureItem(
-                icon: Icons.check_circle,
-                text: 'متابعة نسبة الإنجاز لكل سورة',
-              ),
-              _FeatureItem(
-                icon: Icons.check_circle,
-                text: 'إحصائيات شاملة للحفظ',
-              ),
-              _FeatureItem(icon: Icons.check_circle, text: 'واجهة سهلة وجميلة'),
-              _FeatureItem(
-                icon: Icons.check_circle,
-                text: 'إمكانية حذف التقدم',
-              ),
-              SizedBox(height: 16),
-              Text(
-                '﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryColor,
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'تطبيق متابعة حفظ القرآن الكريم',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'وفقك الله في حفظ كتابه الكريم 🤲',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14),
-              ),
-            ],
+                SizedBox(height: 8),
+                Text(
+                  'النسخة 2.0 - محسّنة بباكج Quran',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'المميزات:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 8),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'بيانات دقيقة 100% من مصدر موثوق',
+                ),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'تسجيل عدد الصفحات والآيات المحفوظة',
+                ),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'متابعة نسبة الإنجاز لكل سورة',
+                ),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'إحصائيات شاملة ومفصلة',
+                ),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'معلومات السور (مكية/مدنية)',
+                ),
+                _FeatureItem(
+                  icon: Icons.check_circle,
+                  text: 'واجهة سهلة وجميلة',
+                ),
+                SizedBox(height: 16),
+                Text(
+                  '﴿ وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا ﴾',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'وفقك الله في حفظ كتابه الكريم 🤲',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -284,7 +321,7 @@ class _FeatureItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 14, height: 1.4),
+              style: const TextStyle(fontSize: 13, height: 1.4),
             ),
           ),
         ],

@@ -1,22 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
-import '../data/surah_data.dart';
 import '../models/surah.dart';
+import '../services/quran_data_service.dart';
 import '../services/storage_service.dart';
 
 final storageServiceProvider = Provider((ref) => StorageService());
 
 final surahListProvider =
-    StateNotifierProvider<SurahListNotifier, AsyncValue<List<Surah>>>((ref) {
-      return SurahListNotifier(ref.watch(storageServiceProvider));
-    });
+    NotifierProvider<SurahListNotifier, AsyncValue<List<Surah>>>(
+      SurahListNotifier.new,
+    );
 
-class SurahListNotifier extends StateNotifier<AsyncValue<List<Surah>>> {
-  final StorageService _storageService;
+class SurahListNotifier extends Notifier<AsyncValue<List<Surah>>> {
+  late final StorageService _storageService;
 
-  SurahListNotifier(this._storageService) : super(const AsyncValue.loading()) {
+  @override
+  AsyncValue<List<Surah>> build() {
+    _storageService = ref.watch(storageServiceProvider);
     _loadSurahs();
+    return const AsyncValue.loading();
   }
 
   Future<void> _loadSurahs() async {
@@ -26,8 +28,10 @@ class SurahListNotifier extends StateNotifier<AsyncValue<List<Surah>>> {
       final savedSurahs = await _storageService.loadSurahs();
 
       if (savedSurahs.isEmpty) {
-        state = AsyncValue.data(List.from(SurahData.defaultSurahs));
-        await _storageService.saveSurahs(SurahData.defaultSurahs);
+        // استخدام بيانات من باكج quran
+        final defaultSurahs = QuranDataService.getAllSurahs();
+        state = AsyncValue.data(defaultSurahs);
+        await _storageService.saveSurahs(defaultSurahs);
       } else {
         state = AsyncValue.data(savedSurahs);
       }
@@ -39,14 +43,19 @@ class SurahListNotifier extends StateNotifier<AsyncValue<List<Surah>>> {
   Future<void> updateSurah(
     int surahNumber,
     int memorizedPages,
-    int memorizedAyahs,
-  ) async {
-    state.whenData((surahs) async {
+    int memorizedVerses, {
+    List<int>? memorizedPageNumbers,
+  }) async {
+    final currentState = state;
+
+    currentState.whenData((surahs) async {
       final updatedSurahs = surahs.map((surah) {
         if (surah.number == surahNumber) {
           return surah.copyWith(
             memorizedPages: memorizedPages,
-            memorizedAyahs: memorizedAyahs,
+            memorizedVerses: memorizedVerses,
+            memorizedPageNumbers: memorizedPageNumbers,
+            lastUpdated: DateTime.now(),
           );
         }
         return surah;
@@ -58,10 +67,17 @@ class SurahListNotifier extends StateNotifier<AsyncValue<List<Surah>>> {
   }
 
   Future<void> resetSurahProgress(int surahNumber) async {
-    state.whenData((surahs) async {
+    final currentState = state;
+
+    currentState.whenData((surahs) async {
       final updatedSurahs = surahs.map((surah) {
         if (surah.number == surahNumber) {
-          return surah.copyWith(memorizedPages: 0, memorizedAyahs: 0);
+          return surah.copyWith(
+            memorizedPages: 0,
+            memorizedVerses: 0,
+            memorizedPageNumbers: [],
+            lastUpdated: DateTime.now(),
+          );
         }
         return surah;
       }).toList();
@@ -72,56 +88,109 @@ class SurahListNotifier extends StateNotifier<AsyncValue<List<Surah>>> {
   }
 
   Future<void> resetAllProgress() async {
-    state = AsyncValue.data(List.from(SurahData.defaultSurahs));
+    final defaultSurahs = QuranDataService.getAllSurahs();
+    state = AsyncValue.data(defaultSurahs);
     await _storageService.clearAllData();
-    await _storageService.saveSurahs(SurahData.defaultSurahs);
+    await _storageService.saveSurahs(defaultSurahs);
+  }
+
+  Future<void> refreshData() async {
+    await _loadSurahs();
   }
 }
 
-// Provider للإحصائيات
+// Provider للإحصائيات المحسّنة
 final statsProvider = Provider<Map<String, dynamic>>((ref) {
   final surahsAsync = ref.watch(surahListProvider);
 
   return surahsAsync.when(
     data: (surahs) {
-      final totalMemorizedPages = surahs.fold<int>(
-        0,
-        (sum, surah) => sum + surah.memorizedPages,
+      final totalMemorizedPages = QuranDataService.calculateTotalMemorizedPages(
+        surahs,
       );
-      final totalMemorizedAyahs = surahs.fold<int>(
-        0,
-        (sum, surah) => sum + surah.memorizedAyahs,
+      final totalMemorizedVerses =
+          QuranDataService.calculateTotalMemorizedVerses(surahs);
+      final completedSurahs = QuranDataService.getCompletedSurahsCount(surahs);
+      final inProgressSurahs = QuranDataService.getInProgressSurahsCount(
+        surahs,
       );
 
-      final pagesPercentage =
-          (totalMemorizedPages / SurahData.totalPages) * 100;
-      final ayahsPercentage =
-          (totalMemorizedAyahs / SurahData.totalAyahs) * 100;
+      final totalPages = QuranDataService.totalPages;
+      final totalVerses = QuranDataService.getTotalVerses();
+
+      final pagesPercentage = (totalMemorizedPages / totalPages) * 100;
+      final versesPercentage = (totalMemorizedVerses / totalVerses) * 100;
+      final surahsPercentage =
+          (completedSurahs / QuranDataService.totalSurahs) * 100;
 
       return {
         'totalMemorizedPages': totalMemorizedPages,
-        'totalMemorizedAyahs': totalMemorizedAyahs,
-        'totalPages': SurahData.totalPages,
-        'totalAyahs': SurahData.totalAyahs,
+        'totalMemorizedVerses': totalMemorizedVerses,
+        'totalPages': totalPages,
+        'totalVerses': totalVerses,
         'pagesPercentage': pagesPercentage,
-        'ayahsPercentage': ayahsPercentage,
+        'versesPercentage': versesPercentage,
+        'completedSurahs': completedSurahs,
+        'inProgressSurahs': inProgressSurahs,
+        'totalSurahs': QuranDataService.totalSurahs,
+        'surahsPercentage': surahsPercentage,
+        'notStartedSurahs':
+            QuranDataService.totalSurahs - completedSurahs - inProgressSurahs,
       };
     },
     loading: () => {
       'totalMemorizedPages': 0,
-      'totalMemorizedAyahs': 0,
-      'totalPages': SurahData.totalPages,
-      'totalAyahs': SurahData.totalAyahs,
+      'totalMemorizedVerses': 0,
+      'totalPages': QuranDataService.totalPages,
+      'totalVerses': QuranDataService.getTotalVerses(),
       'pagesPercentage': 0.0,
-      'ayahsPercentage': 0.0,
+      'versesPercentage': 0.0,
+      'completedSurahs': 0,
+      'inProgressSurahs': 0,
+      'totalSurahs': QuranDataService.totalSurahs,
+      'surahsPercentage': 0.0,
+      'notStartedSurahs': QuranDataService.totalSurahs,
     },
     error: (_, __) => {
       'totalMemorizedPages': 0,
-      'totalMemorizedAyahs': 0,
-      'totalPages': SurahData.totalPages,
-      'totalAyahs': SurahData.totalAyahs,
+      'totalMemorizedVerses': 0,
+      'totalPages': QuranDataService.totalPages,
+      'totalVerses': QuranDataService.getTotalVerses(),
       'pagesPercentage': 0.0,
-      'ayahsPercentage': 0.0,
+      'versesPercentage': 0.0,
+      'completedSurahs': 0,
+      'inProgressSurahs': 0,
+      'totalSurahs': QuranDataService.totalSurahs,
+      'surahsPercentage': 0.0,
+      'notStartedSurahs': QuranDataService.totalSurahs,
     },
+  );
+});
+
+// Provider للسور المكتملة
+final completedSurahsProvider = Provider<List<Surah>>((ref) {
+  final surahsAsync = ref.watch(surahListProvider);
+  return surahsAsync.maybeWhen(
+    data: (surahs) => surahs.where((s) => s.isCompleted).toList(),
+    orElse: () => [],
+  );
+});
+
+// Provider للسور قيد الحفظ
+final inProgressSurahsProvider = Provider<List<Surah>>((ref) {
+  final surahsAsync = ref.watch(surahListProvider);
+  return surahsAsync.maybeWhen(
+    data: (surahs) =>
+        surahs.where((s) => s.hasStarted && !s.isCompleted).toList(),
+    orElse: () => [],
+  );
+});
+
+// Provider للسور التي لم تبدأ
+final notStartedSurahsProvider = Provider<List<Surah>>((ref) {
+  final surahsAsync = ref.watch(surahListProvider);
+  return surahsAsync.maybeWhen(
+    data: (surahs) => surahs.where((s) => !s.hasStarted).toList(),
+    orElse: () => [],
   );
 });

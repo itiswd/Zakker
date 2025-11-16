@@ -37,7 +37,8 @@ class AppTheme {
         primary: primaryColor,
         secondary: accentColor,
         error: errorColor,
-        background: backgroundColor,
+
+        // background: backgroundColor,
         surface: cardColor,
       ),
       scaffoldBackgroundColor: backgroundColor,
@@ -109,7 +110,7 @@ class AppTheme {
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         color: cardColor,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withAlpha(13),
       ),
 
       // الأزرار
@@ -186,7 +187,7 @@ class AppTheme {
   // ظلال مخصصة
   static List<BoxShadow> get cardShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
+      color: Colors.black.withAlpha(10),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -194,7 +195,7 @@ class AppTheme {
 
   static List<BoxShadow> get elevatedShadow => [
     BoxShadow(
-      color: Colors.black.withOpacity(0.08),
+      color: Colors.black.withAlpha(20),
       blurRadius: 12,
       offset: const Offset(0, 4),
     ),

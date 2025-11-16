@@ -29,7 +29,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
   void initState() {
     super.initState();
     memorizedPages = widget.surah.memorizedPages;
-    memorizedAyahs = widget.surah.memorizedAyahs;
+    memorizedAyahs = widget.surah.memorizedVerses;
 
     _animationController = AnimationController(
       vsync: this,
@@ -138,7 +138,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
                     icon: Icons.article_rounded,
                     label: 'عدد الآيات المحفوظة',
                     value: memorizedAyahs,
-                    max: widget.surah.totalAyahs,
+                    max: widget.surah.totalVerses,
                     onChanged: (value) =>
                         setState(() => memorizedAyahs = value),
                   ),
@@ -177,7 +177,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'سورة ${widget.surah.name}',
+                'سورة ${widget.surah.nameArabic}',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -389,7 +389,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('تم حفظ التقدم في سورة ${widget.surah.name}'),
+        content: Text('تم حفظ التقدم في سورة ${widget.surah.nameArabic}'),
         backgroundColor: AppTheme.successColor,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
@@ -402,7 +402,7 @@ class _SurahDetailsSheetState extends ConsumerState<SurahDetailsSheet>
                 .updateSurah(
                   widget.surah.number,
                   widget.surah.memorizedPages,
-                  widget.surah.memorizedAyahs,
+                  widget.surah.memorizedVerses,
                 );
           },
         ),
